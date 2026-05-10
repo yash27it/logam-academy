@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useForm, ValidationError } from '@formspree/react'
 
 const STEPS = ['Personal Info', 'Background', 'Source & Message']
 
@@ -133,10 +134,10 @@ function SelectField({ label, value, onChange, error, options, required }) {
 }
 
 export default function LeadForm() {
+  const [state, handleSubmit] = useForm("mlgzolee")
   const [step, setStep] = useState(0)
   const [data, setData] = useState(INITIAL)
   const [errors, setErrors] = useState({})
-  const [submitted, setSubmitted] = useState(false)
 
   const set = (field) => (e) => {
     setData((d) => ({ ...d, [field]: e.target.value }))
@@ -176,16 +177,29 @@ export default function LeadForm() {
 
   const back = () => setStep((s) => s - 1)
 
-  const submit = () => {
+  const submit = async (e) => {
+    e.preventDefault()
     const errs = validate()
     if (Object.keys(errs).length) {
       setErrors(errs)
       return
     }
-    setSubmitted(true)
+    
+    // Create FormData object with all form fields
+    const formData = new FormData()
+    formData.append('name', data.name)
+    formData.append('mobile', data.mobile)
+    formData.append('email', data.email)
+    formData.append('qualification', data.qualification)
+    formData.append('status', data.status)
+    formData.append('source', data.source)
+    formData.append('message', data.message)
+    
+    // Submit to Formspree
+    await handleSubmit(formData)
   }
 
-  if (submitted) {
+  if (state.succeeded) {
     return (
       <section id="lead" className="bg-ink py-20 md:py-32">
         <div className="max-w-xl mx-auto px-4 text-center">
@@ -200,7 +214,7 @@ export default function LeadForm() {
             reach out to you shortly on <span className="text-brand-400 font-semibold">{data.mobile}</span>.
           </p>
           <button
-            onClick={() => { setSubmitted(false); setData(INITIAL); setStep(0) }}
+            onClick={() => { setData(INITIAL); setStep(0); window.location.reload() }}
             className="text-sm text-ink-400 hover:text-white border border-white/10 hover:border-white/30 px-5 py-2 rounded-full transition-colors"
           >
             Submit another response
@@ -249,145 +263,150 @@ export default function LeadForm() {
 
           {/* Form card */}
           <div className="bg-ink-800/60 border border-white/8 rounded-2xl p-6 md:p-8 backdrop-blur-sm">
-            <ProgressBar step={step} />
+            <form onSubmit={submit}>
+              <ProgressBar step={step} />
 
-            {/* Step 1: Personal Info */}
-            {step === 0 && (
-              <div className="space-y-4 animate-fade-in">
-                <InputField
-                  label="Full Name"
-                  value={data.name}
-                  onChange={set('name')}
-                  error={errors.name}
-                  placeholder="e.g. Rahul Sharma"
-                  required
-                />
-                <InputField
-                  label="Mobile Number"
-                  type="tel"
-                  value={data.mobile}
-                  onChange={set('mobile')}
-                  error={errors.mobile}
-                  placeholder="e.g. 9876543210"
-                  required
-                />
-                <InputField
-                  label="Email Address"
-                  type="email"
-                  value={data.email}
-                  onChange={set('email')}
-                  error={errors.email}
-                  placeholder="e.g. rahul@email.com"
-                  required
-                />
-              </div>
-            )}
-
-            {/* Step 2: Background */}
-            {step === 1 && (
-              <div className="space-y-4 animate-fade-in">
-                <InputField
-                  label="Highest Qualification"
-                  value={data.qualification}
-                  onChange={set('qualification')}
-                  error={errors.qualification}
-                  placeholder="e.g. B.Com, MBA, 12th Pass"
-                  required
-                />
-                <SelectField
-                  label="Current Status"
-                  value={data.status}
-                  onChange={set('status')}
-                  error={errors.status}
-                  required
-                  options={[
-                    'Student',
-                    'Fresher / Job Seeker',
-                    'Working Professional',
-                    'Business Owner',
-                    'Freelancer',
-                    'Homemaker',
-                    'Other',
-                  ]}
-                />
-              </div>
-            )}
-
-            {/* Step 3: Source + Message */}
-            {step === 2 && (
-              <div className="space-y-4 animate-fade-in">
-                <SelectField
-                  label="How Did You Hear About Us?"
-                  value={data.source}
-                  onChange={set('source')}
-                  error={errors.source}
-                  required
-                  options={[
-                    'Google Search',
-                    'Instagram',
-                    'Facebook',
-                    'WhatsApp',
-                    'YouTube',
-                    'Friend / Referral',
-                    'LinkedIn',
-                    'Other',
-                  ]}
-                />
-                <div>
-                  <label className="block text-xs font-semibold text-ink-200 mb-1.5 tracking-wide">
-                    Your Message
-                    <span className="text-brand-500 ml-0.5">*</span>
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={data.message}
-                    onChange={set('message')}
-                    placeholder="Tell us about your business goals or what you're looking for..."
-                    className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-sm text-white placeholder-ink-400 outline-none focus:ring-2 focus:ring-brand-500/40 transition-all resize-none ${
-                      errors.message
-                        ? 'border-red-500/60 bg-red-500/5'
-                        : 'border-white/10 focus:border-brand-500/40'
-                    }`}
+              {/* Step 1: Personal Info */}
+              {step === 0 && (
+                <div className="space-y-4 animate-fade-in">
+                  <InputField
+                    label="Full Name"
+                    value={data.name}
+                    onChange={set('name')}
+                    error={errors.name}
+                    placeholder="e.g. Rahul Sharma"
+                    required
                   />
-                  <FieldError msg={errors.message} />
+                  <InputField
+                    label="Mobile Number"
+                    type="tel"
+                    value={data.mobile}
+                    onChange={set('mobile')}
+                    error={errors.mobile}
+                    placeholder="e.g. 9876543210"
+                    required
+                  />
+                  <InputField
+                    label="Email Address"
+                    type="email"
+                    value={data.email}
+                    onChange={set('email')}
+                    error={errors.email}
+                    placeholder="e.g. rahul@email.com"
+                    required
+                  />
                 </div>
+              )}
+
+              {/* Step 2: Background */}
+              {step === 1 && (
+                <div className="space-y-4 animate-fade-in">
+                  <InputField
+                    label="Highest Qualification"
+                    value={data.qualification}
+                    onChange={set('qualification')}
+                    error={errors.qualification}
+                    placeholder="e.g. B.Com, MBA, 12th Pass"
+                    required
+                  />
+                  <SelectField
+                    label="Current Status"
+                    value={data.status}
+                    onChange={set('status')}
+                    error={errors.status}
+                    required
+                    options={[
+                      'Student',
+                      'Fresher / Job Seeker',
+                      'Working Professional',
+                      'Business Owner',
+                      'Freelancer',
+                      'Homemaker',
+                      'Other',
+                    ]}
+                  />
+                </div>
+              )}
+
+              {/* Step 3: Source + Message */}
+              {step === 2 && (
+                <div className="space-y-4 animate-fade-in">
+                  <SelectField
+                    label="How Did You Hear About Us?"
+                    value={data.source}
+                    onChange={set('source')}
+                    error={errors.source}
+                    required
+                    options={[
+                      'Google Search',
+                      'Instagram',
+                      'Facebook',
+                      'WhatsApp',
+                      'YouTube',
+                      'Friend / Referral',
+                      'LinkedIn',
+                      'Other',
+                    ]}
+                  />
+                  <div>
+                    <label className="block text-xs font-semibold text-ink-200 mb-1.5 tracking-wide">
+                      Your Message
+                      <span className="text-brand-500 ml-0.5">*</span>
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={data.message}
+                      onChange={set('message')}
+                      placeholder="Tell us about your business goals or what you're looking for..."
+                      className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-sm text-white placeholder-ink-400 outline-none focus:ring-2 focus:ring-brand-500/40 transition-all resize-none ${
+                        errors.message
+                          ? 'border-red-500/60 bg-red-500/5'
+                          : 'border-white/10 focus:border-brand-500/40'
+                      }`}
+                    />
+                    <FieldError msg={errors.message} />
+                  </div>
+                </div>
+              )}
+
+              {/* Navigation buttons */}
+              <div className="flex gap-3 mt-7">
+                {step > 0 && (
+                  <button
+                    type="button"
+                    onClick={back}
+                    className="flex-1 border border-white/15 text-ink-200 hover:text-white hover:border-white/30 font-semibold py-3 rounded-xl text-sm transition-all"
+                  >
+                    ← Back
+                  </button>
+                )}
+                {step < STEPS.length - 1 ? (
+                  <button
+                    type="button"
+                    onClick={next}
+                    className="flex-1 bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 rounded-xl text-sm transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-brand-500/20"
+                  >
+                    Continue →
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={state.submitting}
+                    className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:opacity-70 text-white font-semibold py-3 rounded-xl text-sm transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-brand-500/20 flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                    {state.submitting ? 'Submitting...' : 'Submit'}
+                  </button>
+                )}
               </div>
-            )}
 
-            {/* Navigation buttons */}
-            <div className="flex gap-3 mt-7">
-              {step > 0 && (
-                <button
-                  onClick={back}
-                  className="flex-1 border border-white/15 text-ink-200 hover:text-white hover:border-white/30 font-semibold py-3 rounded-xl text-sm transition-all"
-                >
-                  ← Back
-                </button>
-              )}
-              {step < STEPS.length - 1 ? (
-                <button
-                  onClick={next}
-                  className="flex-1 bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 rounded-xl text-sm transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-brand-500/20"
-                >
-                  Continue →
-                </button>
-              ) : (
-                <button
-                  onClick={submit}
-                  className="flex-1 bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 rounded-xl text-sm transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-brand-500/20 flex items-center justify-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
-                  Submit
-                </button>
-              )}
-            </div>
-
-            <p className="text-center text-ink-400 text-xs mt-4">
-              Step {step + 1} of {STEPS.length} — all fields marked{' '}
-              <span className="text-brand-500">*</span> are required
-            </p>
+              <p className="text-center text-ink-400 text-xs mt-4">
+                Step {step + 1} of {STEPS.length} — all fields marked{' '}
+                <span className="text-brand-500">*</span> are required
+              </p>
+            </form>
           </div>
         </div>
       </div>
